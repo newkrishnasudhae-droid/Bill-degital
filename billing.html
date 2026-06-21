@@ -1,0 +1,353 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>নিউ কৃষ্ণসুধা এন্টারপ্রাইজ - Billing</title>
+    <!-- Tailwind CSS -->
+    <script src="https://cdn.tailwindcss.com"></script>
+    <!-- HTML to PDF -->
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/html2pdf.js/0.10.1/html2pdf.bundle.min.js"></script>
+    <style>
+        @media print {
+            body { 
+                background-color: white; 
+                margin: 0; 
+                padding: 0; 
+                -webkit-print-color-adjust: exact;
+            }
+            .no-print { 
+                display: none !important; 
+            }
+            .slip-container { 
+                box-shadow: none !important; 
+                max-width: 100% !important; 
+                padding: 10px !important; 
+                margin: 0 !important; 
+            }
+            input { 
+                border: none !important; 
+                background: transparent !important; 
+            }
+        }
+        
+        /* Custom scrollbar for aesthetic purposes */
+        ::-webkit-scrollbar { width: 6px; }
+        ::-webkit-scrollbar-track { background: #f1f1f1; }
+        ::-webkit-scrollbar-thumb { background: #cbd5e1; border-radius: 4px; }
+        ::-webkit-scrollbar-thumb:hover { background: #94a3b8; }
+    </style>
+</head>
+<body class="bg-gray-100 min-h-screen p-2 sm:p-6 font-sans text-gray-800 flex flex-col items-center">
+
+    <!-- Main Printable Bill Container -->
+    <div class="slip-container bg-white w-full max-w-2xl shadow-xl rounded-lg p-6 sm:p-10 relative">
+        
+        <!-- Header Section -->
+        <div class="text-center mb-8 border-b-2 border-gray-800 pb-6">
+            <input type="text" id="businessName" value="নিউ কৃষ্ণসুধা এন্টারপ্রাইজ" 
+                class="text-3xl sm:text-4xl font-bold text-center w-full focus:outline-none border-b border-transparent focus:border-gray-200 transition-colors py-1" />
+            <input type="text" value="Cont: +91 97496 05796" 
+                class="text-sm sm:text-base text-gray-600 text-center w-full focus:outline-none mt-2 font-medium" />
+        </div>
+
+        <!-- Customer & Bill Details -->
+        <div class="flex flex-col sm:flex-row justify-between gap-4 mb-6">
+            <div class="flex-1 space-y-3">
+                <div class="flex items-center gap-2">
+                    <span class="font-bold text-gray-700 w-20">Name:</span>
+                    <input type="text" id="custName" class="flex-1 border-b border-gray-300 focus:outline-none focus:border-blue-500 px-1 py-1" placeholder="Customer Name">
+                </div>
+                <div class="flex items-center gap-2">
+                    <span class="font-bold text-gray-700 w-20">Mobile:</span>
+                    <input type="tel" id="mobileNo" class="flex-1 border-b border-gray-300 focus:outline-none focus:border-blue-500 px-1 py-1" placeholder="10-digit Mobile">
+                </div>
+            </div>
+            <div class="flex-1 space-y-3 sm:text-right mt-2 sm:mt-0">
+                <div class="flex items-center sm:justify-end gap-2">
+                    <span class="font-bold text-gray-700">Slip No:</span>
+                    <input type="text" id="slipNo" value="101" class="w-24 border-b border-gray-300 focus:outline-none focus:border-blue-500 px-1 py-1 text-center sm:text-right font-mono">
+                </div>
+                <div class="flex items-center sm:justify-end gap-2">
+                    <span class="font-bold text-gray-700">Date:</span>
+                    <span id="currentDate" class="text-gray-800 px-1 py-1 font-mono"></span>
+                </div>
+            </div>
+        </div>
+
+        <!-- Invoice Items Table -->
+        <div class="overflow-x-auto mb-2">
+            <table class="w-full border-collapse">
+                <thead>
+                    <tr class="bg-gray-100 border-y border-gray-400">
+                        <th class="text-left py-2 px-2 w-10 font-bold text-sm">#</th>
+                        <th class="text-left py-2 px-2 font-bold text-sm">Item Description</th>
+                        <th class="text-center py-2 px-2 w-20 font-bold text-sm">Qty</th>
+                        <th class="text-right py-2 px-2 w-24 font-bold text-sm">Rate</th>
+                        <th class="text-right py-2 px-2 w-28 font-bold text-sm">Amount</th>
+                        <th class="text-center py-2 px-2 w-10 no-print"></th>
+                    </tr>
+                </thead>
+                <tbody id="itemsBody">
+                    <!-- Rows will be injected by JavaScript -->
+                </tbody>
+            </table>
+        </div>
+
+        <button onclick="addRow()" class="no-print text-blue-600 hover:text-blue-800 text-sm font-bold flex items-center gap-1 mb-8 mt-2 transition-colors px-2 py-1 rounded hover:bg-blue-50">
+            <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" fill="currentColor" viewBox="0 0 16 16"><path d="M8 4a.5.5 0 0 1 .5.5v3h3a.5.5 0 0 1 0 1h-3v3a.5.5 0 0 1-1 0v-3h-3a.5.5 0 0 1 0-1h3v-3A.5.5 0 0 1 8 4z"/></svg>
+            Add Item
+        </button>
+
+        <!-- Totals Section -->
+        <div class="flex justify-end border-t-2 border-gray-800 pt-6">
+            <div class="w-full sm:w-1/2 bg-gray-50 p-4 rounded-lg border border-gray-200">
+                <div class="flex justify-between items-center text-xl font-black text-gray-800">
+                    <span>Total Amount:</span>
+                    <span>₹ <span id="totalAmt">0.00</span></span>
+                </div>
+                <p class="text-xs text-gray-500 text-right mt-1 font-medium">All amounts in Indian Rupees (INR)</p>
+            </div>
+        </div>
+
+        <!-- Signatures -->
+        <div class="flex justify-between font-bold text-sm mt-16 pt-8">
+            <span class="border-t border-black px-4 pt-2 text-center">Customer Signature</span>
+            <span class="border-t border-black px-4 pt-2 text-center">Authorized Signature</span>
+        </div>
+    </div>
+
+    <!-- Actions Buttons -->
+    <div class="w-full max-w-2xl mx-auto mt-6 flex flex-wrap gap-2 md:gap-4 no-print pb-10">
+        <button class="flex-1 bg-blue-600 text-white py-3 px-2 rounded-lg font-bold hover:bg-blue-700 transition-colors shadow-lg flex items-center justify-center gap-1 md:gap-2 text-sm md:text-base" onclick="window.print()">
+            <svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" fill="currentColor" viewBox="0 0 16 16">
+              <path d="M2.5 8a.5.5 0 1 0 0-1 .5.5 0 0 0 0 1"/>
+              <path d="M5 1a2 2 0 0 0-2 2v2H2a2 2 0 0 0-2 2v3a2 2 0 0 0 2 2h1v1a2 2 0 0 0 2 2h6a2 2 0 0 0 2-2v-1h1a2 2 0 0 0 2-2V7a2 2 0 0 0-2-2h-1V3a2 2 0 0 0-2-2zM4 3a1 1 0 0 1 1-1h6a1 1 0 0 1 1 1v2H4zm1 5a2 2 0 0 0-2 2v1H2a1 1 0 0 1-1-1V7a1 1 0 0 1 1-1h12a1 1 0 0 1 1 1v3a1 1 0 0 1-1 1h-1v-1a2 2 0 0 0-2-2zm7 2v3a1 1 0 0 1-1 1H5a1 1 0 0 1-1-1v-3a1 1 0 0 1 1-1h6a1 1 0 0 1 1 1"/>
+            </svg>
+            <span class="hidden sm:inline">Print</span>
+        </button>
+        <button class="flex-1 bg-gray-800 text-white py-3 px-2 rounded-lg font-bold hover:bg-black transition-colors shadow-lg flex items-center justify-center gap-1 md:gap-2 text-sm md:text-base" onclick="downloadPDF()">
+            <svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" fill="currentColor" viewBox="0 0 16 16">
+              <path d="M.5 9.9a.5.5 0 0 1 .5.5v2.5a1 1 0 0 0 1 1h12a1 1 0 0 0 1-1v-2.5a.5.5 0 0 1 1 0v2.5a2 2 0 0 1-2 2H2a2 2 0 0 1-2-2v-2.5a.5.5 0 0 1 .5-.5z"/>
+              <path d="M7.646 11.854a.5.5 0 0 0 .708 0l3-3a.5.5 0 0 0-.708-.708L8.5 10.293V1.5a.5.5 0 0 0-1 0v8.793L5.354 8.146a.5.5 0 1 0-.708.708l3 3z"/>
+            </svg>
+            <span class="hidden sm:inline">PDF</span>
+        </button>
+        <button class="flex-[2] sm:flex-1 bg-[#25D366] text-white py-3 px-2 rounded-lg font-bold hover:bg-[#128C7E] transition-colors shadow-lg flex items-center justify-center gap-1 md:gap-2 text-sm md:text-base" onclick="shareWhatsApp()">
+            <svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" fill="currentColor" viewBox="0 0 16 16">
+              <path d="M13.601 2.326A7.85 7.85 0 0 0 7.994 0C3.627 0 .068 3.558.064 7.926c0 1.399.366 2.76 1.057 3.965L0 16l4.204-1.102a7.9 7.9 0 0 0 3.79.965h.004c4.368 0 7.926-3.558 7.93-7.93A7.9 7.9 0 0 0 13.6 2.326zM7.994 14.521a6.6 6.6 0 0 1-3.356-.92l-.24-.144-2.494.654.666-2.433-.156-.251a6.56 6.56 0 0 1-1.007-3.505c0-3.626 2.957-6.584 6.591-6.584a6.56 6.56 0 0 1 4.66 1.931 6.56 6.56 0 0 1 1.928 4.66c-.004 3.639-2.961 6.592-6.592 6.592m3.615-4.934c-.197-.099-1.17-.578-1.353-.646-.182-.065-.315-.099-.445.099-.133.197-.513.646-.627.775-.114.133-.232.148-.43.05-.197-.1-.836-.308-1.592-.985-.59-.525-.985-1.175-1.103-1.372-.114-.198-.011-.304.088-.403.087-.088.197-.232.296-.346.1-.114.133-.198.198-.33.065-.134.034-.248-.015-.347-.05-.099-.445-1.076-.612-1.47-.16-.389-.323-.335-.445-.34-.114-.007-.247-.007-.38-.007a.73.73 0 0 0-.529.247c-.182.198-.691.677-.691 1.654s.71 1.916.81 2.049c.098.133 1.394 2.132 3.383 2.992.47.205.84.326 1.129.418.475.152.904.129 1.246.08.38-.058 1.171-.48 1.338-.943.164-.464.164-.86.114-.943-.049-.084-.182-.133-.38-.232z"/>
+            </svg>
+            WhatsApp
+        </button>
+    </div>
+
+    <script>
+        // --- Core Functions ---
+
+        // Set the current date formatted nicely
+        function updateDate() {
+            const dateObj = new Date();
+            const formattedDate = dateObj.toLocaleDateString('en-IN', { day: '2-digit', month: 'short', year: 'numeric' });
+            document.getElementById('currentDate').textContent = formattedDate;
+        }
+
+        // Add a new row to the table
+        function addRow() {
+            const tbody = document.getElementById('itemsBody');
+            const rowCount = tbody.children.length + 1;
+            const tr = document.createElement('tr');
+            tr.className = "border-b border-gray-200 hover:bg-blue-50 transition-colors";
+            
+            tr.innerHTML = `
+                <td class="py-2 px-2 text-gray-500 font-mono row-number text-sm">${rowCount}</td>
+                <td class="py-2 px-2">
+                    <input type="text" placeholder="Enter Item Name" class="w-full focus:outline-none bg-transparent font-medium text-gray-700">
+                </td>
+                <td class="py-2 px-2">
+                    <input type="number" min="0" step="1" placeholder="0" class="qty-input w-full text-center focus:outline-none bg-transparent font-mono" oninput="calculateRow(this)">
+                </td>
+                <td class="py-2 px-2">
+                    <input type="number" min="0" step="0.01" placeholder="0.00" class="rate-input w-full text-right focus:outline-none bg-transparent font-mono" oninput="calculateRow(this)">
+                </td>
+                <td class="py-2 px-2 text-right font-bold text-gray-800">
+                    ₹<span class="amount-cell ml-1 font-mono">0.00</span>
+                </td>
+                <td class="py-2 px-2 text-center no-print">
+                    <button onclick="deleteRow(this)" class="text-red-500 hover:text-red-700 p-1.5 rounded-full hover:bg-red-100 transition-colors" title="Delete Item">
+                        <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" fill="currentColor" viewBox="0 0 16 16"><path d="M5.5 5.5A.5.5 0 0 1 6 6v6a.5.5 0 0 1-1 0V6a.5.5 0 0 1 .5-.5zm2.5 0a.5.5 0 0 1 .5.5v6a.5.5 0 0 1-1 0V6a.5.5 0 0 1 .5-.5zm3 .5a.5.5 0 0 0-1 0v6a.5.5 0 0 0 1 0V6z"/><path fill-rule="evenodd" d="M14.5 3a1 1 0 0 1-1 1H13v9a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V4h-.5a1 1 0 0 1-1-1V2a1 1 0 0 1 1-1H6a1 1 0 0 1 1-1h2a1 1 0 0 1 1 1h3.5a1 1 0 0 1 1 1v1zM4.118 4 4 4.059V13a1 1 0 0 0 1 1h6a1 1 0 0 0 1-1V4.059L11.882 4H4.118zM2.5 3V2h11v1h-11z"/></svg>
+                    </button>
+                </td>
+            `;
+            tbody.appendChild(tr);
+            updateRowNumbers();
+        }
+
+        // Calculate Amount for a specific row
+        function calculateRow(inputElement) {
+            const tr = inputElement.closest('tr');
+            const qty = parseFloat(tr.querySelector('.qty-input').value) || 0;
+            const rate = parseFloat(tr.querySelector('.rate-input').value) || 0;
+            const amount = (qty * rate).toFixed(2);
+            tr.querySelector('.amount-cell').textContent = amount;
+            calculateTotal();
+        }
+
+        // Calculate Grand Total
+        function calculateTotal() {
+            let total = 0;
+            document.querySelectorAll('.amount-cell').forEach(cell => {
+                total += parseFloat(cell.textContent) || 0;
+            });
+            document.getElementById('totalAmt').textContent = total.toFixed(2);
+        }
+
+        // Delete a row from the table
+        function deleteRow(btn) {
+            const tbody = document.getElementById('itemsBody');
+            // Ensure at least one row stays
+            if (tbody.children.length > 1) {
+                btn.closest('tr').remove();
+                updateRowNumbers();
+                calculateTotal();
+            }
+        }
+
+        // Update Sequence # after adding/deleting
+        function updateRowNumbers() {
+            document.querySelectorAll('.row-number').forEach((cell, index) => {
+                cell.textContent = index + 1;
+            });
+        }
+
+        // --- PDF & Export Functions ---
+
+        function downloadPDF() {
+            const element = document.querySelector('.slip-container');
+            const slipNo = document.getElementById('slipNo').value || '101';
+            const custName = document.getElementById('custName').value || 'Customer';
+            
+            // 1. Temporarily hide elements with 'no-print' class for the PDF
+            const noPrintElements = element.querySelectorAll('.no-print');
+            noPrintElements.forEach(el => el.style.display = 'none');
+            
+            // 2. Temporarily remove borders from inputs so they look like plain text
+            const inputs = element.querySelectorAll('input');
+            const originalStyles = [];
+            inputs.forEach((input, index) => {
+                originalStyles[index] = input.style.cssText;
+                input.style.border = 'none';
+                input.style.background = 'transparent';
+                // Adjust placeholder text for print so empty inputs don't show "Customer Name"
+                input.setAttribute('data-placeholder', input.placeholder);
+                if(!input.value) input.placeholder = ''; 
+            });
+
+            const opt = {
+                margin:       [10, 10, 10, 10], // top, left, bottom, right
+                filename:     `Bill_${slipNo}_${custName}.pdf`,
+                image:        { type: 'jpeg', quality: 0.98 },
+                html2canvas:  { scale: 2, useCORS: true, logging: false },
+                jsPDF:        { unit: 'mm', format: 'a4', orientation: 'portrait' }
+            };
+
+            // 3. Generate PDF and then restore the UI
+            html2pdf().set(opt).from(element).save().then(() => {
+                noPrintElements.forEach(el => el.style.display = '');
+                inputs.forEach((input, index) => {
+                    input.style.cssText = originalStyles[index];
+                    input.placeholder = input.getAttribute('data-placeholder') || '';
+                });
+            });
+        }
+
+        async function shareWhatsApp() {
+            const element = document.querySelector('.slip-container');
+            const slipNo = document.getElementById('slipNo').value || '101';
+            const custName = document.getElementById('custName').value || 'Customer';
+            const fileName = `Bill_${slipNo}_${custName}.pdf`;
+
+            // Temporarily hide elements for PDF generation
+            const noPrintElements = element.querySelectorAll('.no-print');
+            noPrintElements.forEach(el => el.style.display = 'none');
+            
+            const inputs = element.querySelectorAll('input');
+            const originalStyles = [];
+            inputs.forEach((input, index) => {
+                originalStyles[index] = input.style.cssText;
+                input.style.border = 'none';
+                input.style.background = 'transparent';
+                input.setAttribute('data-placeholder', input.placeholder);
+                if(!input.value) input.placeholder = ''; 
+            });
+
+            const opt = {
+                margin: [10, 10, 10, 10],
+                filename: fileName,
+                image: { type: 'jpeg', quality: 0.98 },
+                html2canvas: { scale: 2, useCORS: true, logging: false },
+                jsPDF: { unit: 'mm', format: 'a4', orientation: 'portrait' }
+            };
+
+            try {
+                // Generate PDF as a File object
+                const pdfBlob = await html2pdf().set(opt).from(element).output('blob');
+                const file = new File([pdfBlob], fileName, { type: 'application/pdf' });
+
+                // Restore UI immediately
+                noPrintElements.forEach(el => el.style.display = '');
+                inputs.forEach((input, index) => {
+                    input.style.cssText = originalStyles[index];
+                    input.placeholder = input.getAttribute('data-placeholder') || '';
+                });
+
+                // Try native sharing (Ideal for mobile to attach the PDF file directly to WhatsApp)
+                if (navigator.canShare && navigator.canShare({ files: [file] })) {
+                    await navigator.share({
+                        files: [file],
+                        title: 'Invoice from ' + document.getElementById('businessName').value,
+                    });
+                } else {
+                    // Fallback for Desktop/Unsupported browsers: Send a text summary via wa.me link
+                    sendWhatsAppTextFallback();
+                }
+            } catch (error) {
+                console.error("PDF generation/sharing failed:", error);
+                // Restore UI on fail
+                noPrintElements.forEach(el => el.style.display = '');
+                inputs.forEach((input, index) => {
+                    input.style.cssText = originalStyles[index];
+                    input.placeholder = input.getAttribute('data-placeholder') || '';
+                });
+                sendWhatsAppTextFallback();
+            }
+        }
+
+        function sendWhatsAppTextFallback() {
+            const businessName = document.getElementById('businessName').value;
+            let mobileNo = document.getElementById('mobileNo').value.trim();
+            const custName = document.getElementById('custName').value.trim() || 'Customer';
+            const slipNo = document.getElementById('slipNo').value;
+            const date = document.getElementById('currentDate').textContent;
+            const totalAmt = document.getElementById('totalAmt').textContent;
+
+            // Extract just the digits from the mobile number
+            mobileNo = mobileNo.replace(/\D/g, '');
+            
+            // Add +91 automatically if it is a 10 digit Indian number
+            if (mobileNo.length === 10) {
+                mobileNo = '91' + mobileNo;
+            }
+
+            // Build the text receipt
+            let msg = `*${businessName}*\n`;
+            msg += `------------------------\n`;
+            msg += `*Date:* ${date}\n*Slip No:* ${slipNo}\n*Customer:* ${custName}\n\n*Items:*\n`;
+
+            let itemIndex = 1;
+            document.querySelectorAll('#itemsBody tr').forEach(row => {
+                const itemName = row.querySelector('input[type="text"]').value.trim() || 'Item';
+                const qty = row.querySelector('.qty-input').value;
+                const rate = row.querySelector('.rate-input').value;
+                const amt = row.querySelector('.amount-cell').textContent;
+                
+                if(parseFloat(qty) > 0 && pars
