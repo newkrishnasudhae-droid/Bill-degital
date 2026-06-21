@@ -1,0 +1,127 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>New Krishna Sudha Enterprises - Bill</title>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/qrcodejs/1.0.0/qrcode.min.js"></script>
+    <style>
+        body { font-family: 'Courier New', Courier, monospace; background-color: #f4f4f4; display: flex; flex-direction: column; align-items: center; padding: 20px; color: #1a1a1a; }
+        .slip-container { background-color: white; width: 420px; padding: 25px; border: 1px solid #ddd; box-shadow: 0 10px 15px -3px rgba(0,0,0,0.1); }
+        .header { text-align: center; border-bottom: 2px solid #000; padding-bottom: 15px; margin-bottom: 20px; }
+        .header h2 { margin: 0; font-size: 20px; text-transform: uppercase; }
+        .header p { margin: 4px 0; font-size: 13px; font-weight: 600; }
+        .info-section { margin-bottom: 20px; font-size: 14px; line-height: 1.8; }
+        table { width: 100%; border-collapse: collapse; margin-bottom: 15px; font-size: 13px; }
+        th, td { border-bottom: 1px dashed #ccc; padding: 8px 4px; text-align: left; }
+        th { font-weight: bold; border-bottom: 2px solid #000; }
+        [contenteditable="true"] { outline: none; padding: 2px; border-bottom: 1px dotted #ccc; display: inline-block; min-width: 50px; }
+        .add-btn { background-color: #f8fafc; border: 1px dashed #94a3b8; color: #475569; padding: 8px; cursor: pointer; width: 100%; margin-bottom: 20px; font-family: inherit; }
+        .save-btn { padding: 12px 20px; background-color: #28a745; color: white; border: none; cursor: pointer; font-weight: bold; width: 100%; margin-top: 10px; }
+        .print-btn { padding: 12px 20px; background-color: #000; color: #fff; border: none; cursor: pointer; font-weight: bold; width: 100%; margin-top: 10px; }
+        .qr-section { text-align: center; margin: 20px 0; }
+        #qrcode { display: flex; justify-content: center; margin-top: 10px; }
+        .footer { margin-top: 40px; display: flex; justify-content: space-between; font-size: 13px; font-weight: bold; }
+        @media print { .no-print { display: none !important; } }
+    </style>
+</head>
+<body>
+
+<div class="slip-container">
+    <div class="header">
+        <h2>NEW KRISHNA SUDHA ENTERPRISES</h2>
+        <p>Prop.: Malay Hens & Suman Hens</p>
+        <p>Fului, Badanganj, Hooghly</p>
+    </div>
+
+    <div class="info-section">
+        <p><strong>Date:</strong> <span id="currentDate"></span></p>
+        <p><strong>Slip No:</strong> <span id="slipNo" contenteditable="true">101</span></p>
+        <p><strong>Name:</strong> <span id="custName" contenteditable="true">Enter Name</span></p>
+        <p><strong>Payment:</strong> 
+            <select id="paymentStatus" onchange="generateRecordQR()">
+                <option value="Unpaid">Unpaid</option>
+                <option value="Paid">Paid</option>
+            </select>
+        </p>
+        <p><strong>Total Amount: ₹ </strong> <span id="totalAmt">0.00</span></p>
+    </div>
+
+    <table id="itemsTable">
+        <thead>
+            <tr><th>#</th><th>Item</th><th>Qty</th><th>Price</th><th class="no-print"></th></tr>
+        </thead>
+        <tbody>
+            <tr>
+                <td class="row-number">1</td>
+                <td contenteditable="true">Item Name</td>
+                <td contenteditable="true" class="qty-cell" onblur="calculateTotal()">1</td>
+                <td contenteditable="true" class="price-cell" onblur="calculateTotal()">0</td>
+                <td class="no-print"><button onclick="deleteRow(this)">✕</button></td>
+            </tr>
+        </tbody>
+    </table>
+    <button class="add-btn no-print" onclick="addRow()">+ Add New Item</button>
+
+    <div class="qr-section">
+        <div id="qrcode"></div>
+    </div>
+
+    <div class="footer">
+        <span>Customer Sign</span><span>Seller Sign</span>
+    </div>
+</div>
+
+<button class="save-btn no-print" onclick="sendBillToEmail()">📧 Save & Email Bill</button>
+<button class="print-btn no-print" onclick="window.print()">🖨️ Print Delivery Slip</button>
+
+<script>
+    document.getElementById('currentDate').textContent = new Date().toLocaleDateString('en-IN');
+
+    function calculateTotal() {
+        let total = 0;
+        document.querySelectorAll('#itemsTable tbody tr').forEach(row => {
+            const qty = parseFloat(row.querySelector('.qty-cell').innerText) || 0;
+            const price = parseFloat(row.querySelector('.price-cell').innerText) || 0;
+            total += (qty * price);
+        });
+        document.getElementById('totalAmt').innerText = total.toFixed(2);
+        generateRecordQR();
+    }
+
+    function addRow() {
+        const tbody = document.querySelector('#itemsTable tbody');
+        const newRow = document.createElement('tr');
+        newRow.innerHTML = `<td class="row-number"></td><td contenteditable="true"></td><td contenteditable="true" class="qty-cell" onblur="calculateTotal()">1</td><td contenteditable="true" class="price-cell" onblur="calculateTotal()">0</td><td class="no-print"><button onclick="deleteRow(this)">✕</button></td>`;
+        tbody.appendChild(newRow);
+        updateRowNumbers();
+    }
+
+    function deleteRow(btn) { btn.closest('tr').remove(); updateRowNumbers(); calculateTotal(); }
+
+    function updateRowNumbers() {
+        document.querySelectorAll('#itemsTable tbody tr').forEach((row, i) => row.querySelector('.row-number').textContent = i + 1);
+    }
+
+    function generateRecordQR() {
+        const data = `Slip:${document.getElementById('slipNo').innerText}|Name:${document.getElementById('custName').innerText}|Total:₹${document.getElementById('totalAmt').innerText}|Status:${document.getElementById('paymentStatus').value}`;
+        document.getElementById("qrcode").innerHTML = "";
+        new QRCode(document.getElementById("qrcode"), { text: data, width: 100, height: 100 });
+    }
+
+    function sendBillToEmail() {
+        const slipNo = document.getElementById('slipNo').innerText;
+        const custName = document.getElementById('custName').innerText;
+        const totalAmt = document.getElementById('totalAmt').innerText;
+        const emailTo = "newkrishnasudhae@gmail.com";
+        const subject = `Bill Record: Slip #${slipNo} - ${custName}`;
+        const body = `Details:\nSlip: ${slipNo}\nCustomer: ${custName}\nTotal: ₹${totalAmt}\nDate: ${new Date().toLocaleDateString()}`;
+        window.location.href = `mailto:${emailTo}?subject=${encodeURIComponent(subject)}&body=${encodeURIComponent(body)}`;
+        setTimeout(() => { window.print(); }, 1000);
+    }
+
+    document.querySelectorAll('[contenteditable="true"]').forEach(el => el.addEventListener('blur', generateRecordQR));
+    generateRecordQR();
+</script>
+</body>
+</html>
